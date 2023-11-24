@@ -1,0 +1,6 @@
+[default]
+vm0 ansible_host=192.168.122.149
+vm1 ansible_host=192.168.122.200
+
+[all:vars]
+ansible_user=mishagin

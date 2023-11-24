@@ -1,0 +1,204 @@
+---
+- name: base
+  hosts: default
+  become: true
+  vars:
+    kube_version: 1.21.5
+  tasks:
+    - name: Nopassword sudoers
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        state: present
+        insertafter: '^%sudo'
+        line: 'mishagin ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+
+    - name: Create /etc/hosts
+      ansible.builtin.template:
+        src: ./templates/hosts.j2
+        dest: /etc/hosts
+        mode: 0644
+
+    - name: Remove swap from fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: 'swap'
+        state: absent
+      notify: Disable swap
+
+    - name: Add load modules
+      ansible.builtin.copy:
+        src: ./files/kubernetes.conf
+        dest: /etc/modules-load.d/kubernetes.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Enable modules
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+        - ip_vs
+        - ip_vs_rr
+        - nf_conntrack
+
+    - name: Add sysctl params kubernetes
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: '1'
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/kubernetes.conf
+      loop:
+        - net.ipv4.ip_forward
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-ip6tables
+
+    - name: Disable ipv6
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: '1'
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/disable_ipv6.conf
+      loop:
+        - net.ipv6.conf.all.disable_ipv6
+        - net.ipv6.conf.default.disable_ipv6
+
+    - name: Create containerd directory
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Create containerd config
+      ansible.builtin.copy:
+        src: ./files/config.toml
+        dest: /etc/containerd/config.toml
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restart containerd
+
+    - name: Get kubenetes key
+      ansible.builtin.shell:
+        cmd: curl -fsSL https://dl.k8s.io/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+        creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+        warn: false
+      ### I don't know how to deparmor key with ansible
+      # get_url:
+      #   url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      #   dest: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+      #   mode: '0664'
+
+    - name: Add kubernetes repo
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
+
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - bash-completion
+          - containerd
+          - containernetworking-plugins
+          - apt-transport-https
+          - vim
+          - kubectl={{ kube_version }}-00
+          - kubeadm={{ kube_version }}-00
+          - kubelet={{ kube_version }}-00
+          - ipvsadm
+          - ipset
+        state: present
+
+    - name: Mark kubernetes packages
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubectl
+        - kubeadm
+        - kubelet
+
+  handlers:
+    - name: Restart containerd
+      ansible.builtin.systemd:
+        name: containerd
+        enabled: true
+        state: restarted
+
+    - name: Disable swap
+      ansible.builtin.shell: swapoff --all
+      notify: Remove swap file
+
+    - name: Remove swap file
+      ansible.builtin.file:
+        path: /swap.img
+        state: absent
+
+- name: Create loadbalancer
+  hosts: vm0
+  become: true
+  tasks:
+    - name: Install haproxy
+      ansible.builtin.apt:
+        name: haproxy
+        state: present
+      notify: Restart haproxy
+
+    - name: Add config
+      ansible.builtin.template:
+        src: ./templates/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+        mode: 0644
+      notify: Restart haproxy
+
+  handlers:
+    - name: Restart haproxy
+      ansible.builtin.systemd:
+        name: haproxy
+        enabled: true
+        state: restarted
+
+- name: Create control-plane
+  hosts: vm0
+  become: true
+  vars:
+    kube_version: 1.21.5
+  tasks:
+    - name: Add InitConfiguration file
+      ansible.builtin.template:
+        src: ./templates/initconfiguration.yaml.j2
+        dest: /etc/kubernetes/initconfiguration.yaml
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Cluster init
+      ansible.builtin.command:
+        cmd: "kubeadm init --config /etc/kubernetes/initconfiguration.yaml"
+        creates: /etc/kubernetes/kubelet.conf
+      notify: Create bootstrap token
+
+  handlers:
+    - name: Create bootstrap token
+      ansible.builtin.command:
+        cmd: "kubeadm token create --print-join-command"
+      register: join_command
+
+
+- name: Create worker node
+  hosts: vm1
+  become: true
+  tasks:
+    - name: Join node
+      ansible.builtin.command:
+        cmd: "{{ hostvars.vm0.join_command.stdout }}"
+        creates: /etc/kubernetes/kubelet.conf
+      register: msg
