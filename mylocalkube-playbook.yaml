@@ -100,7 +100,7 @@
       ansible.builtin.apt_repository:
         repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
         state: present
-        filename: kubernetes.list
+        filename: kubernetes
 
     - name: Install packages
       ansible.builtin.apt:
