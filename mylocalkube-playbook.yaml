@@ -184,9 +184,7 @@
       ansible.builtin.command:
         cmd: "kubeadm init --config /etc/kubernetes/initconfiguration.yaml"
         creates: /etc/kubernetes/kubelet.conf
-      notify: Create bootstrap token
 
-  handlers:
     - name: Create bootstrap token
       ansible.builtin.command:
         cmd: "kubeadm token create --print-join-command"
@@ -201,4 +199,3 @@
       ansible.builtin.command:
         cmd: "{{ hostvars.vm0.join_command.stdout }}"
         creates: /etc/kubernetes/kubelet.conf
-      register: msg
