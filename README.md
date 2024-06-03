@@ -21,7 +21,7 @@ sudo mkdir /var/lib/libvirt/ignition/
 Add base ignition file
 
 ```bash
-cp ./ignition/base.json /var/lib/libvirt/ignition/base.json
+sudo cp ./ignition/base.json /var/lib/libvirt/ignition/flatcar0.json
 ```
 
 Add AppArmor rules, allow qemu to access the config files:
@@ -80,7 +80,7 @@ gpg --verify flatcar_production_qemu_image.img.sig
 Create a snapshot image
 
 ```bash
-qemu-img create -f qcow2 -F qcow2 -b flatcar_production_qemu_image.img flatcar0.qcow2
+sudo qemu-img create -f qcow2 -F qcow2 -b flatcar_production_qemu_image.img flatcar0.qcow2
 ```
 
 Create new vm
@@ -95,5 +95,6 @@ virt-install \
   --vnc \
   --noautoconsole \
   --import \
-  --qemu-commandline="-fw_cfg name=opt/org.flatcar-linux/config,file=/var/lib/libvirt/ignition/flatcar0.ign"
+  --channel unix,target_type=virtio,name=org.qemu.guest_agent.0,path=/var/lib/libvirt/qemu/channel/target/domain-10-flatcar1/org.qemu.guest_agent.0 \
+  --qemu-commandline="-fw_cfg name=opt/org.flatcar-linux/config,file=/var/lib/libvirt/ignition/flatcar0.json"
 ```
