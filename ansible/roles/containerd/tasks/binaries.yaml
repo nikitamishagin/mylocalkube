@@ -1,0 +1,22 @@
+---
+- name: "Create a directory for cni binary"
+  ansible.builtin.file:
+    path: "{{ cni_bin_dir }}"
+    state: directory
+
+- name: "Create a directory for cni config files"
+  ansible.builtin.file:
+    path: "{{ cni_conf_dir }}"
+    state: directory
+
+- name: "Get Containerd"
+  ansible.builtin.unarchive:
+    src: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+    dest: "/usr/local"
+    remote_src: yes
+
+- name: "Get cni"
+  ansible.builtin.unarchive:
+    src: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/cri-containerd-cni-{{ containerd_version }}-linux-amd64.tar.gz"
+    dest: "/"
+    remote_src: yes

@@ -1,0 +1,23 @@
+---
+- include_tasks: bootstrap_ubuntu.yaml
+  become: true
+  whan: ansible_distribution == "Ubuntu"
+- include_tasks: bootstrap_centos.yaml
+  become: true
+  when: ansible_distribution == "CentOS"
+
+- include_tasks: tasks/binaries.yaml
+  become: true
+
+- name: "Create a directory for containerd config"
+  become: true
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+
+- name: "Download a systemd unit file"
+  become: true
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
+    dest: /usr/local/lib/systemd/system/containerd.service
+    mode: '0755'
