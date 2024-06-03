@@ -1,2 +1,6 @@
 .vscode
 .idea
+terraform/.terraform
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.hcl
