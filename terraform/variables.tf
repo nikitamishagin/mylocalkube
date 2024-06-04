@@ -9,11 +9,12 @@ variable "count_nodes" {
     type = number
     description = "The number of nodes that will be created"
 }
-variable "base_image" {
+
+variable "volume_base_image" {
     type = string
     description = "OS image file"
 }
-variable "pool" {
+variable "volume_pool" {
     default = "default"
     type = string
     description = "Image pool name"  
@@ -28,18 +29,78 @@ variable "volume_format" {
     description = "Image format"
 }
 
-variable "vcpu" {
+variable "domain_vcpu" {
     default = 1
     type = number
     description = "Count of vcpu"
 }
-variable "memory" {
+variable "domain_memory" {
     default = 2048
     type = number
     description = "Size of RAM"
 }
 
+variable "network_name" {
+    default = "default"
+    type = string
+    description = "Network name"
+}
+variable "network_autostart" {
+    default = true
+    type = bool
+    description = "Enable network autostart"
+}
+variable "network_mode" {
+    default = "nat"
+    type = string
+    description = "Mode of network"
+}
+variable "network_bridge" {
+    default = ""
+    type = string
+    description = "Beidge name"
+}
+variable "network_domain" {
+    default = ""
+    type = string
+    description = "Domain name"
+}
+variable "network_addresses" {
+    default = [""]
+    type = list(string)
+    description = "IP addresses for vm"
+}
+
 variable "ssh_authorized_keys" {
     type = list(string)
     description = "ssh public keys"
+}
+
+variable "dns_enabled" {
+    default = false
+    type = bool
+    description = "Enable dns service"
+}
+variable "dns_local_only" {
+    default = true
+    type = bool
+    description = "Local only"
+}
+variable "dns_forwarders" {
+    type = list(object({
+        address = string
+        domain = string
+    }))
+    default = [
+        {
+            address = "1.1.1.1"
+            domain = ""
+        },
+        {
+            address = "1.0.0.1"
+            domain = ""
+        }
+    ]
+    description = "List of dns servers"
+  
 }
