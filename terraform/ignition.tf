@@ -4,6 +4,7 @@ data "ignition_config" "ignition" {
   ]
   files = [
     element(data.ignition_file.hostname.*.rendered, count.index),
+    element(data.ignition_file.network.*.rendered, count.index),
     data.ignition_file.kubeadm.rendered,
     data.ignition_file.kubelet.rendered,
     data.ignition_file.kubectl.rendered,
@@ -20,6 +21,15 @@ data "ignition_file" "hostname" {
     content = "flatcar${count.index + 1}"
   }
   count = var.count_nodes
+}
+
+data "ignition_file" "network" {
+  count = var.count_nodes
+  path  = "/etc/systemd/network/00-eth0.network"
+  mode  = 420
+  content {
+    content = var.network_config[count.index]
+  }
 }
 
 data "ignition_file" "kubeadm" {

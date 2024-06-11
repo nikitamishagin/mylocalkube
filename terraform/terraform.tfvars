@@ -3,12 +3,15 @@ libvirt_url = "qemu+tcp://192.168.100.44/system"
 count_nodes = 3
 
 volume_base_image = "flatcar_production_qemu_image.img"
+ubuntu_base_image = "noble-server-cloudimg-amd64.img"
 volume_pool       = "images"
 volume_size       = 16106127360
 volume_format     = "qcow2"
 
 domain_vcpu   = 2
 domain_memory = 3072
+ubuntu_vcpu   = 2
+ubuntu_memory = 3072
 
 network_name      = "main"
 network_mode      = "bridge"
@@ -29,6 +32,11 @@ dns_forwarders = [
   }
 ]
 
+network_config = [
+  "[Match]\nName=eth0\n\n[Network]\nAddress=192.168.100.101/24\nGateway=192.168.100.1\nDNS=1.1.1.1\nDNS=1.0.0.1",
+  "[Match]\nName=eth0\n\n[Network]\nAddress=192.168.100.102/24\nGateway=192.168.100.1\nDNS=1.1.1.1\nDNS=1.0.0.1",
+  "[Match]\nName=eth0\n\n[Network]\nAddress=192.168.100.103/24\nGateway=192.168.100.1\nDNS=1.1.1.1\nDNS=1.0.0.1"
+]
 ignition_url_kubeadm         = "http://192.168.100.44/kubeadm"
 ignition_url_kubelet         = "http://192.168.100.44/kubelet"
 ignition_url_kubectl         = "http://192.168.100.44/kubectl"

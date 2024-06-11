@@ -14,6 +14,10 @@ variable "volume_base_image" {
   type        = string
   description = "OS image file"
 }
+variable "ubuntu_base_image" {
+  type        = string
+  description = "OS image file"
+}
 variable "volume_pool" {
   default     = "default"
   type        = string
@@ -35,6 +39,16 @@ variable "domain_vcpu" {
   description = "Count of vcpu"
 }
 variable "domain_memory" {
+  default     = 2048
+  type        = number
+  description = "Size of RAM"
+}
+variable "ubuntu_vcpu" {
+  default     = 1
+  type        = number
+  description = "Count of vcpu"
+}
+variable "ubuntu_memory" {
   default     = 2048
   type        = number
   description = "Size of RAM"
@@ -105,6 +119,10 @@ variable "dns_forwarders" {
 
 }
 
+variable "network_config" {
+  type        = list(string)
+  description = "Network configs"
+}
 variable "ignition_url_kubeadm" {
   default     = ""
   type        = string
