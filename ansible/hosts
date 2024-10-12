@@ -1,7 +1,0 @@
-[default]
-vm0 ansible_host=192.168.122.101
-vm1 ansible_host=192.168.122.102
-
-[default:vars]
-ansible_user=mishagin
-kube_version=1.21.14

@@ -2,8 +2,6 @@
 - name: base
   hosts: default
   become: true
-  vars:
-    kube_version: 1.21.5
   tasks:
     - name: Nopassword sudoers
       ansible.builtin.lineinfile:
