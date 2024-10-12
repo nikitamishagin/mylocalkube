@@ -34,6 +34,7 @@
 
 - name: Upgrade Kubernetes control-plane
   hosts: control_plane
+  gather_facts: false
   become: yes
   tasks:
     - name: Collect package facts
