@@ -21,6 +21,8 @@
           - kubelet-{{ kube_version }}.*
           - kubectl-{{ kube_version }}.*
         state: present
+        disablerepo: "*"
+        enablerepo: "Kubernetes"
       when: ansible_facts['distribution'] == "CentOS"
 
     - name: Restart kubelet service
