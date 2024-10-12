@@ -1,0 +1,45 @@
+---
+- name: Update Kubernetes version and upgrade packages
+  hosts: all
+  become: yes
+  vars:
+    k8s_version: "1.27"
+
+  tasks:
+    - name: Update Kubernetes repository with the specified version
+      ansible.builtin.template:
+        src: templates/kubernetes.repo.j2
+        dest: /etc/yum.repos.d/kubernetes.repo
+      when: ansible_facts['distribution'] == "CentOS"
+
+    - name: Clean all dnf cache
+      ansible.builtin.command:
+        cmd: dnf clean all
+      when: ansible_facts['distribution'] == "CentOS"
+
+    - name: Install kubeadm, kubelet, kubectl with specified version
+      ansible.builtin.yum:
+        name:
+          - kubeadm-{{ k8s_version }}.*
+          - kubelet-{{ k8s_version }}.*
+          - kubectl-{{ k8s_version }}.*
+        state: present
+      when: ansible_facts['distribution'] == "CentOS"
+
+    - name: Restart kubelet service
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted
+        force: yes
+        enabled: yes
+
+- name: Upgrade Kubernetes control-plane
+  hosts: control_plane
+  become: yes
+  tasks:
+    - name: Collect package facts
+      ansible.builtin.package_facts:
+
+    - name: Upgrade Kubernetes to the specified version
+      ansible.builtin.command:
+        cmd: "kubeadm upgrade apply {{ ansible_facts.packages['kubeadm'][0]['version'] | regex_search('^(\\d+\\.\\d+\\.\\d+)')}} --ignore-preflight-errors=CoreDNSUnsupportedPlugins,CoreDNSMigration --yes"
